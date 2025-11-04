@@ -1,0 +1,417 @@
+/* This file can be used for custom styles that are not covered by Tailwind CSS */
+/* Currently, the application is using Tailwind CSS utility classes for styling */
+
+
+
+/* Styling untuk komponen manajemen kategori */
+.category-color-preview {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #ddd;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* Styling untuk form kategori */
+.category-form-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Styling untuk tabel kategori */
+.categories-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 0.9em;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.categories-table thead tr {
+  background-color: #4F46E5;
+  color: #ffffff;
+  text-align: left;
+}
+
+.categories-table th,
+.categories-table td {
+  padding: 12px 15px;
+}
+
+.categories-table tbody tr {
+  border-bottom: 1px solid #dddddd;
+}
+
+.categories-table tbody tr:nth-of-type(even) {
+  background-color: #f3f3f3;
+}
+
+.categories-table tbody tr:last-of-type {
+  border-bottom: 2px solid #4F46E5;
+}
+
+.categories-table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+/* Tombol aksi */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Responsive improvements for mobile */
+@media (max-width: 768px) {
+  .main-container {
+    padding: 1rem;
+  }
+  
+  .main-content {
+    padding: 1rem;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+  
+  .card {
+    margin: 0.5rem;
+  }
+  
+  .button-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .button-row > * {
+    width: 100%;
+  }
+}
+
+/* Improve mobile text readability */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Mobile-friendly navigation */
+.mobile-nav {
+  padding: 0.5rem 1rem;
+}
+
+/* Better focus styles for accessibility */
+.focus-outline {
+  outline: 2px solid #4F46E5;
+  outline-offset: 2px;
+}
+
+/* Enhanced mobile editor */
+.mobile-editor {
+  min-height: 300px;
+}
+
+/* Sticky footer behavior */
+.sticky-footer {
+  position: sticky;
+  top: 100%;
+}
+
+/* Consistent styling for the application */
+:root {
+  --primary-color: #4F46E5;
+  --primary-light: #818CF8;
+  --secondary-color: #10B981;
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --bg-primary: #F9FAFB;
+  --bg-secondary: #FFFFFF;
+  --border-color: #E5E7EB;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --radius-sm: 0.375rem;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+/* Consistent button styles - using regular CSS instead of @apply */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  color: white;
+  background-color: #4F46E5;
+  transition: background-color 200ms;
+}
+
+.btn-primary:hover {
+  background-color: #4338CA;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border: 1px solid #D1D5DB;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  color: #374151;
+  background-color: white;
+  transition: background-color 200ms;
+}
+
+.btn-secondary:hover {
+  background-color: #F9FAFB;
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  color: white;
+  background-color: #DC2626;
+  transition: background-color 200ms;
+}
+
+.btn-danger:hover {
+  background-color: #B91C1C;
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.btn-xs {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Consistent input styles */
+.input-field {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  background-color: white;
+}
+
+.input-field:focus {
+  outline: 2px solid #818CF8;
+  outline-offset: 2px;
+  border-color: #4F46E5;
+}
+
+/* Consistent card styles */
+.card {
+  background-color: white;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 0.75rem;
+  border: 1px solid #F3F4F6;
+}
+
+.card-hover {
+  background-color: white;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 0.75rem;
+  border: 1px solid #E5E7EB;
+  transition: all 300ms;
+}
+
+.card-hover:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+}
+
+/* Consistent header styles */
+.header-primary {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.header-secondary {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.header-tertiary {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Consistent label styles */
+.label-primary {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Consistent error styles */
+.error-container {
+  background-color: #FEF2F2;
+  border-left: 4px solid #EF4444;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  transition: all 300ms;
+}
+
+.error-message {
+  font-size: 0.875rem;
+  color: #B91C1C;
+  font-weight: 500;
+}
+
+/* Consistent spacing utilities */
+.space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+.space-x-2 > * + * {
+  margin-left: 0.5rem;
+}
+
+.space-x-4 > * + * {
+  margin-left: 1rem;
+}
+
+/* Base styles for consistent typography */
+.text-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.text-subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.text-body {
+  color: #4B5563;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+
+/* Consistent status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-published {
+  background-color: #DCFCE7;
+  color: #166534;
+}
+
+.status-draft {
+  background-color: #FEF9C3;
+  color: #854D0E;
+}
+
+/* Consistent category badges */
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: white;
+}
+
+/* Consistent tag styles */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #DBEAFE;
+  color: #1D4ED8;
+  transition: background-color 200ms;
+}
+
+.tag:hover {
+  background-color: #BFDBFE;
+}
+
+/* Consistent form group */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Consistent section headers */
+.section-header {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+/* Consistent content containers */
+.content-container {
+  padding: 1.5rem;
+}
+
+/* Consistent footer styles */
+.footer-container {
+  padding: 1rem 1.5rem;
+  background-color: #F9FAFB;
+  border-top: 1px solid #E5E7EB;
+}
