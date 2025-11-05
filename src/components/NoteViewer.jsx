@@ -114,7 +114,7 @@ function NoteViewer() {
             <header className="px-6 py-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-100">
               <div className="space-y-4">
                 <h1 className="text-3xl font-bold text-gray-900">{note.title}</h1>
-                <div className="flex flex-wrap items-center text-sm text-gray-600 gap-x-4 gap-y-1">
+                <div className="flex flex-wrap items-center text-sm text-gray-700 gap-x-4 gap-y-1">
                   <div className="flex items-center">
                     <svg className="h-4 w-4 mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -131,7 +131,7 @@ function NoteViewer() {
                     </div>
                   )}
                   
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${note.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${note.status === 'published' ? 'bg-green-100 text-green-900' : 'bg-yellow-100 text-yellow-900'}`}>
                     {note.status === 'published' ? 'Published' : 'Draft'}
                   </span>
                   
@@ -147,7 +147,7 @@ function NoteViewer() {
                   {note.tags && (
                     <div className="flex flex-wrap gap-1">
                       {note.tags.split(',').map((tag, index) => (
-                        <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-900">
                           #{tag.trim()}
                         </span>
                       ))}

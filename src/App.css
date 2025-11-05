@@ -333,12 +333,12 @@
 }
 
 .text-body {
-  color: #4B5563;
+  color: #374151; /* Darker for better readability */
 }
 
 .text-sm {
   font-size: 0.875rem;
-  color: #6B7280;
+  color: #4B5563; /* Darker for better readability */
 }
 
 /* Consistent status badges */

@@ -102,11 +102,11 @@ const CategoryForm = ({ category = null, onSave, onCancel }) => {
         </p>
       </div>
       
-      <form onSubmit={handleSubmit} className="bg-white shadow-sm rounded-lg p-6">
+      <form onSubmit={handleSubmit} className="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
         <div className="space-y-6">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Nama Kategori *
+          <div className="space-y-2">
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              Nama Kategori <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -114,40 +114,67 @@ const CategoryForm = ({ category = null, onSave, onCancel }) => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className={`block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+              className={`block w-full rounded-lg border px-4 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors ${
                 errors.name ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Masukkan nama kategori"
             />
-            {errors.name && <p className="mt-2 text-sm text-red-600">{errors.name}</p>}
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {errors.name}
+              </p>
+            )}
           </div>
           
-          <div>
-            <label htmlFor="color" className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="space-y-2">
+            <label htmlFor="color" className="block text-sm font-medium text-gray-700">
               Warna Kategori
             </label>
-            <div className="flex items-center space-x-3">
-              <input
-                type="color"
-                id="color"
-                name="color"
-                value={formData.color}
-                onChange={handleChange}
-                className="w-12 h-12 border-0 rounded cursor-pointer"
-              />
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <input
+                  type="color"
+                  id="color"
+                  name="color"
+                  value={formData.color}
+                  onChange={handleChange}
+                  className="w-12 h-12 border-0 rounded cursor-pointer overflow-hidden"
+                  title="Pilih warna"
+                />
+                <div className="absolute inset-0 rounded border border-gray-300 pointer-events-none"></div>
+              </div>
               <input
                 type="text"
                 name="color"
                 value={formData.color}
                 onChange={handleChange}
-                className="block w-32 rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border"
+                className="block w-32 rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border"
                 placeholder="#RRGGBB"
               />
+              
+              {/* Predefined color options */}
+              <div className="flex space-x-2">
+                {['#4F46E5', '#10B981', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899'].map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setFormData({...formData, color})}
+                    className={`w-6 h-6 rounded-full border ${
+                      formData.color === color ? 'border-gray-900 ring-2 ring-offset-2 ring-indigo-500' : 'border-gray-300'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    title={`Set color to ${color}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
           
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="space-y-2">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
               Deskripsi
             </label>
             <textarea
@@ -156,33 +183,45 @@ const CategoryForm = ({ category = null, onSave, onCancel }) => {
               value={formData.description}
               onChange={handleChange}
               rows="3"
-              className={`block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
+              className={`block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border transition-colors ${
                 errors.description ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Deskripsi kategori (opsional)"
             ></textarea>
-            {errors.description && <p className="mt-2 text-sm text-red-600">{errors.description}</p>}
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-600 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {errors.description}
+              </p>
+            )}
           </div>
         </div>
         
         {errors.submit && (
-          <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
-            {errors.submit}
+          <div className="mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <span>{errors.submit}</span>
+            </div>
           </div>
         )}
         
-        <div className="mt-8 flex justify-end space-x-3">
+        <div className="mt-8 flex justify-end space-x-4 pt-6 border-t border-gray-200">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="px-6 py-2.5 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            className="px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-200 transform hover:-translate-y-0.5"
           >
             {isLoading ? (
               <span className="flex items-center">
@@ -190,7 +229,7 @@ const CategoryForm = ({ category = null, onSave, onCancel }) => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Menyimpan...
+                Memproses...
               </span>
             ) : (
               category ? 'Update Kategori' : 'Simpan Kategori'

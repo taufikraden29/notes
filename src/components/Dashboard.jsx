@@ -213,7 +213,7 @@ function Dashboard() {
                         <div className="flex justify-between items-start mb-3">
                           <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">{note.title}</h3>
                           <div className="flex flex-col items-end space-y-1">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${note.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${note.status === 'published' ? 'bg-green-100 text-green-900' : 'bg-yellow-100 text-yellow-900'}`}>
                               {note.status === 'published' ? 'Published' : 'Draft'}
                             </span>
                             {(() => {
@@ -236,7 +236,7 @@ function Dashboard() {
                           </div>
                         </div>
                         
-                        <p className="text-gray-600 mb-4 line-clamp-3 flex-grow text-sm">
+                        <p className="text-gray-700 mb-4 line-clamp-3 flex-grow text-sm">
                           {note.content.substring(0, 120)}{note.content.length > 120 ? '...' : ''}
                         </p>
                         
@@ -260,19 +260,19 @@ function Dashboard() {
                             <div className="flex space-x-1">
                               <button
                                 onClick={() => navigate(`/note/${note.$id}`)}
-                                className="text-indigo-600 hover:text-indigo-800 font-medium text-xs px-2.5 py-1 rounded-md hover:bg-indigo-50 transition-colors"
+                                className="text-indigo-700 hover:text-indigo-900 font-medium text-xs px-2.5 py-1 rounded-md hover:bg-indigo-50 transition-colors"
                               >
                                 Read
                               </button>
                               <button
                                 onClick={() => navigate(`/note/${note.$id}/edit`)}
-                                className="text-blue-600 hover:text-blue-800 font-medium text-xs px-2.5 py-1 rounded-md hover:bg-blue-50 transition-colors"
+                                className="text-blue-700 hover:text-blue-900 font-medium text-xs px-2.5 py-1 rounded-md hover:bg-blue-50 transition-colors"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDeleteNote(note.$id)}
-                                className="text-red-600 hover:text-red-800 font-medium text-xs px-2.5 py-1 rounded-md hover:bg-red-50 transition-colors"
+                                className="text-red-700 hover:text-red-900 font-medium text-xs px-2.5 py-1 rounded-md hover:bg-red-50 transition-colors"
                               >
                                 Delete
                               </button>
@@ -302,7 +302,7 @@ function Dashboard() {
                   </svg>
                   New Post
                 </button>
-                <div className="text-xs text-gray-600 mt-2">
+                <div className="text-xs text-gray-700 mt-2">
                   <p className="font-medium">Next steps:</p>
                   <ul className="list-disc list-inside space-y-1 mt-1">
                     <li>Create a new blog post</li>
@@ -389,8 +389,8 @@ function Dashboard() {
                   onClick={() => setSelectedCategory('all')}
                   className={`w-full text-left px-2 py-1.5 rounded-md text-xs ${
                     selectedCategory === 'all' 
-                      ? 'bg-indigo-100 text-indigo-700 font-medium' 
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-indigo-100 text-indigo-900 font-medium' 
+                      : 'text-gray-800 hover:bg-gray-100'
                   }`}
                 >
                   All
@@ -403,8 +403,8 @@ function Dashboard() {
                   onClick={() => setSelectedCategory('uncategorized')}
                   className={`w-full text-left px-2 py-1.5 rounded-md text-xs ${
                     selectedCategory === 'uncategorized' 
-                      ? 'bg-indigo-100 text-indigo-700 font-medium' 
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-indigo-100 text-indigo-900 font-medium' 
+                      : 'text-gray-800 hover:bg-gray-100'
                   }`}
                 >
                   None
@@ -421,12 +421,18 @@ function Dashboard() {
                       onClick={() => setSelectedCategory(category.id)}
                       className={`w-full text-left px-2 py-1.5 rounded-md text-xs truncate ${
                         selectedCategory === category.id 
-                          ? 'bg-indigo-100 text-indigo-700 font-medium' 
-                          : 'text-gray-700 hover:bg-gray-100'
+                          ? 'bg-indigo-100 text-indigo-900 font-medium' 
+                          : 'text-gray-800 hover:bg-gray-100'
                       }`}
                     >
                       <div className="flex justify-between items-center">
-                        <span>{category.name.substring(0, 12)}{category.name.length > 12 ? '...' : ''}</span>
+                        <div className="flex items-center">
+                          <div 
+                            className="w-3 h-3 rounded-full mr-2" 
+                            style={{ backgroundColor: category.color }}
+                          ></div>
+                          <span>{category.name.substring(0, 12)}{category.name.length > 12 ? '...' : ''}</span>
+                        </div>
                         <span className="bg-gray-200 text-gray-700 rounded-full px-1.5 py-0.5 text-xs ml-2">
                           {noteCount}
                         </span>

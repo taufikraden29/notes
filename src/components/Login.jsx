@@ -146,7 +146,7 @@ function Login() {
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
-            className="text-indigo-600 hover:text-indigo-800 font-semibold text-sm transition-colors duration-200 inline-flex items-center"
+            className="text-indigo-700 hover:text-indigo-900 font-semibold text-sm transition-colors duration-200 inline-flex items-center"
           >
             {isLogin 
               ? "Don't have an account? Sign up" 

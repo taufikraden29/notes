@@ -422,8 +422,8 @@ function NoteEditor() {
                   type="button"
                   className={`py-3 px-4 font-medium text-sm whitespace-nowrap ${
                     editorMode === 'text'
-                      ? 'border-b-2 border-indigo-500 text-indigo-600'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'border-b-2 border-indigo-500 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-800'
                   }`}
                   onClick={() => setEditorMode('text')}
                 >
@@ -438,8 +438,8 @@ function NoteEditor() {
                   type="button"
                   className={`py-3 px-4 font-medium text-sm whitespace-nowrap ${
                     editorMode === 'richtext'
-                      ? 'border-b-2 border-indigo-500 text-indigo-600'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'border-b-2 border-indigo-500 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-800'
                   }`}
                   onClick={() => setEditorMode('richtext')}
                 >
@@ -454,8 +454,8 @@ function NoteEditor() {
                   type="button"
                   className={`py-3 px-4 font-medium text-sm whitespace-nowrap ${
                     editorMode === 'code'
-                      ? 'border-b-2 border-indigo-500 text-indigo-600'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'border-b-2 border-indigo-500 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-800'
                   }`}
                   onClick={() => setEditorMode('code')}
                 >
@@ -470,8 +470,8 @@ function NoteEditor() {
                   type="button"
                   className={`py-3 px-4 font-medium text-sm whitespace-nowrap ${
                     editorMode === 'mixed'
-                      ? 'border-b-2 border-indigo-500 text-indigo-600'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'border-b-2 border-indigo-500 text-indigo-700'
+                      : 'text-gray-600 hover:text-gray-800'
                   }`}
                   onClick={() => setEditorMode('mixed')}
                 >
