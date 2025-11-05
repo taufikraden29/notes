@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { createNote, updateNote, getNotes } from '../services/notes';
+import { createNote, updateNote, getNotes, autoSaveNote, cancelPendingAutoSave } from '../services/notes';
 import { getCategories } from '../services/categoryServiceAppwrite';
 import CodeEditor from './CodeEditor';
 import ContentEditor from './ContentEditor';
 import RichTextEditor from './RichTextEditor';
+import ImprovedRichTextEditor from './ImprovedRichTextEditor';
+import EnhancedRichTextEditor from './EnhancedRichTextEditor';
+import DOMPurify from 'dompurify';
 
 function NoteEditor() {
   const [title, setTitle] = useState('');
@@ -22,6 +25,8 @@ function NoteEditor() {
   const [codeLanguage, setCodeLanguage] = useState('javascript');
   const [mixedContent, setMixedContent] = useState([]); // For storing mixed text/code content
   const [richTextContent, setRichTextContent] = useState(''); // For storing rich text content
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [lastAutoSave, setLastAutoSave] = useState(null);
   const textareaRef = useRef(null);
   const { user } = useAuth();
   const { addNotification } = useNotification();
@@ -29,14 +34,207 @@ function NoteEditor() {
   const { id } = useParams(); // For editing existing notes
   const isEditing = !!id;
 
+  // Memoize expensive computations
+  const sanitizedTitle = useMemo(() => DOMPurify.sanitize(title.trim()), [title]);
+  const sanitizedTags = useMemo(() => DOMPurify.sanitize(tags), [tags]);
+
   useEffect(() => {
     loadCategories();
     if (isEditing) {
       loadNote();
     }
+    
+    // Load any saved draft from local storage
+    if (id) {
+      const savedTitle = localStorage.getItem(`draft_title_${id}`);
+      const savedContent = localStorage.getItem(`draft_content_${id}`);
+      const savedRichTextContent = localStorage.getItem(`draft_richTextContent_${id}`);
+      const savedCodeContent = localStorage.getItem(`draft_codeContent_${id}`);
+      const savedMixedContent = localStorage.getItem(`draft_mixedContent_${id}`);
+      const savedStatus = localStorage.getItem(`draft_status_${id}`);
+      const savedCategory = localStorage.getItem(`draft_category_${id}`);
+      const savedTags = localStorage.getItem(`draft_tags_${id}`);
+      
+      if (savedTitle) setTitle(savedTitle);
+      if (savedContent) setContent(savedContent);
+      if (savedRichTextContent) setRichTextContent(savedRichTextContent);
+      if (savedCodeContent) setCodeContent(savedCodeContent);
+      if (savedMixedContent) setMixedContent(JSON.parse(savedMixedContent || '[]'));
+      if (savedStatus) setStatus(savedStatus);
+      if (savedCategory) setCategory(savedCategory);
+      if (savedTags) setTags(savedTags);
+    }
+    
+    // Clean up function
+    return () => {
+      // Clear any unsaved drafts when component unmounts
+      if (id) {
+        localStorage.removeItem(`draft_title_${id}`);
+        localStorage.removeItem(`draft_content_${id}`);
+        localStorage.removeItem(`draft_richTextContent_${id}`);
+        localStorage.removeItem(`draft_codeContent_${id}`);
+        localStorage.removeItem(`draft_mixedContent_${id}`);
+        localStorage.removeItem(`draft_status_${id}`);
+        localStorage.removeItem(`draft_category_${id}`);
+        localStorage.removeItem(`draft_tags_${id}`);
+        localStorage.removeItem(`draft_${id}`); // Legacy key
+        
+        // Cancel any pending auto-saves when component unmounts
+        cancelPendingAutoSave(id);
+      }
+    };
   }, [isEditing, id]);
 
-  async function loadCategories() {
+  // Optimized auto-save function with debouncing
+  const debouncedAutoSaveRef = useRef(null);
+  const handleAutoSave = useCallback(async (noteId, content, editorType = editorMode) => {
+    if (!noteId || !user) return;
+    
+    // Clear any existing timeout
+    if (debouncedAutoSaveRef.current) {
+      clearTimeout(debouncedAutoSaveRef.current);
+    }
+    
+    // Set a new timeout to debounce the auto-save
+    debouncedAutoSaveRef.current = setTimeout(async () => {
+      setIsAutoSaving(true);
+      
+      try {
+        // Create a note update with relevant content based on editor type
+        const noteData = {
+          title: sanitizedTitle || 'Untitled',
+          status: status || 'draft',
+          category: category || null,
+          tags: sanitizedTags || null,
+        };
+        
+        // Add content based on editor type
+        switch (editorType) {
+          case 'richtext':
+            // Sanitize rich text content before storing
+            const sanitizedContent = DOMPurify.sanitize(content, {
+              ALLOWED_TAGS: [
+                'p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'blockquote', 'q', 'ul', 'ol', 'li', 'a', 'img', 'code', 'pre', 'div',
+                'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'b', 'i'
+              ],
+              ALLOWED_ATTR: [
+                'href', 'src', 'alt', 'title', 'class', 'id', 'style', 'target', 
+                'rel', 'width', 'height', 'align', 'colspan', 'rowspan'
+              ],
+              ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+            });
+            
+            noteData.richTextContent = sanitizedContent;
+            // Also create a plain text version for searchability
+            const div = document.createElement('div');
+            div.innerHTML = sanitizedContent;
+            noteData.content = div.textContent || div.innerText || '';
+            break;
+          case 'text':
+            noteData.content = content;
+            break;
+          case 'code':
+            noteData.codeContent = content;
+            noteData.content = content; // Also store in main content for searchability
+            break;
+          case 'mixed':
+            noteData.mixedContent = content;
+            // Create a plain text version for searchability
+            noteData.content = Array.isArray(content) 
+              ? content.map(item => item.content).join('\n\n') 
+              : '';
+            break;
+          default:
+            noteData.content = content;
+        }
+        
+        await autoSaveNote(noteId, noteData);
+        setLastAutoSave(new Date());
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        throw error;
+      } finally {
+        setIsAutoSaving(false);
+      }
+    }, 1000); // 1 second debounce
+  }, [editorMode, sanitizedTitle, status, category, sanitizedTags, user]);
+
+  // Auto-save function specifically for rich text editor
+  const handleRichTextAutoSave = useCallback(async (noteId, content) => {
+    return handleAutoSave(noteId, content, 'richtext');
+  }, [handleAutoSave]);
+
+  // Save to local storage with debouncing to prevent excessive writes
+  const debouncedSaveToLocalStorageRef = useRef(null);
+  const saveToLocalStorage = useCallback((key, value) => {
+    if (!id) return;
+    
+    // Clear any existing timeout
+    if (debouncedSaveToLocalStorageRef.current) {
+      clearTimeout(debouncedSaveToLocalStorageRef.current);
+    }
+    
+    // Set a new timeout to debounce the local storage save
+    debouncedSaveToLocalStorageRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+      } catch (error) {
+        console.error('Failed to save to local storage:', error);
+      }
+    }, 500); // 500ms debounce
+  }, [id]);
+
+  // Save to local storage when values change
+  useEffect(() => {
+    if (id) {
+      saveToLocalStorage(`draft_title_${id}`, DOMPurify.sanitize(title));
+    }
+  }, [title, id, saveToLocalStorage]);
+  
+  useEffect(() => {
+    if (id) {
+      saveToLocalStorage(`draft_content_${id}`, content);
+    }
+  }, [content, id, saveToLocalStorage]);
+  
+  useEffect(() => {
+    if (id) {
+      saveToLocalStorage(`draft_richTextContent_${id}`, richTextContent);
+    }
+  }, [richTextContent, id, saveToLocalStorage]);
+  
+  useEffect(() => {
+    if (id) {
+      saveToLocalStorage(`draft_codeContent_${id}`, codeContent);
+    }
+  }, [codeContent, id, saveToLocalStorage]);
+  
+  useEffect(() => {
+    if (id) {
+      saveToLocalStorage(`draft_mixedContent_${id}`, mixedContent);
+    }
+  }, [mixedContent, id, saveToLocalStorage]);
+  
+  useEffect(() => {
+    if (id) {
+      saveToLocalStorage(`draft_status_${id}`, status);
+    }
+  }, [status, id, saveToLocalStorage]);
+  
+  useEffect(() => {
+    if (id) {
+      saveToLocalStorage(`draft_category_${id}`, category);
+    }
+  }, [category, id, saveToLocalStorage]);
+  
+  useEffect(() => {
+    if (id) {
+      saveToLocalStorage(`draft_tags_${id}`, DOMPurify.sanitize(tags));
+    }
+  }, [tags, id, saveToLocalStorage]);
+
+  const loadCategories = useCallback(async () => {
     try {
       const response = await getCategories(user.$id);
       setCategories(response.documents);
@@ -44,9 +242,9 @@ function NoteEditor() {
       console.error('Error loading categories:', error);
       addNotification('Error loading categories: ' + error.message, 'error');
     }
-  }
+  }, [user, addNotification]);
 
-  async function loadNote() {
+  const loadNote = useCallback(async () => {
     try {
       setLoading(true);
       const notes = await getNotes(user.$id);
@@ -87,10 +285,10 @@ function NoteEditor() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [user, id, navigate, addNotification]);
 
   // Function to detect if text is code based on patterns
-  const isCodeBlock = (text) => {
+  const isCodeBlock = useCallback((text) => {
     // Check for common code patterns
     const codeIndicators = [
       // Indented code blocks
@@ -145,10 +343,10 @@ function NoteEditor() {
     }
     
     return false;
-  };
+  }, []);
 
   // Function to process pasted content and classify as text or code
-  const processPastedContent = (pastedText) => {
+  const processPastedContent = useCallback((pastedText) => {
     // Split the content by lines
     const lines = pastedText.split('\n');
     const processedContent = [];
@@ -203,14 +401,12 @@ function NoteEditor() {
     }
     
     return processedContent;
-  };
+  }, [isCodeBlock]);
 
-
-
-  async function handleSubmit(e) {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
-    if (!title.trim()) {
+    if (!sanitizedTitle) {
       setError('Title is required');
       addNotification('Please enter a title for your post', 'error');
       return;
@@ -250,10 +446,10 @@ function NoteEditor() {
 
       // Prepare note data based on editor mode
       const noteData = {
-        title: title.trim(),
+        title: sanitizedTitle,
         status,
         category: category || null,
-        tags: tags || null,
+        tags: sanitizedTags || null,
       };
 
       if (editorMode === 'code') {
@@ -266,17 +462,34 @@ function NoteEditor() {
         // Also create a combined text version for searchability
         noteData.content = mixedContent.map(item => item.content).join('\n\n');
       } else if (editorMode === 'richtext') {
-        // Store rich text content
-        noteData.richTextContent = richTextContent;
+        // Sanitize rich text content before storing
+        const sanitizedRichText = DOMPurify.sanitize(richTextContent, {
+          ALLOWED_TAGS: [
+            'p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'blockquote', 'q', 'ul', 'ol', 'li', 'a', 'img', 'code', 'pre', 'div',
+            'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'b', 'i'
+          ],
+          ALLOWED_ATTR: [
+            'href', 'src', 'alt', 'title', 'class', 'id', 'style', 'target', 
+            'rel', 'width', 'height', 'align', 'colspan', 'rowspan'
+          ],
+          ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+        });
+        
+        // Store sanitized rich text content
+        noteData.richTextContent = sanitizedRichText;
         // Also create a plain text version for searchability
         const div = document.createElement('div');
-        div.innerHTML = richTextContent;
+        div.innerHTML = sanitizedRichText;
         noteData.content = div.textContent || div.innerText || '';
       } else {
         noteData.content = content.trim();
       }
 
       if (isEditing) {
+        // Cancel any pending auto-saves before manual save
+        cancelPendingAutoSave(id);
+        
         // Update existing note
         noteData.updatedAt = new Date().toISOString();
         await updateNote(id, noteData);
@@ -287,6 +500,19 @@ function NoteEditor() {
         addNotification('Note created successfully!', 'success');
       }
 
+      // If we have auto-saved content, clear the local storage for this note
+      if (id) {
+        localStorage.removeItem(`draft_title_${id}`);
+        localStorage.removeItem(`draft_content_${id}`);
+        localStorage.removeItem(`draft_richTextContent_${id}`);
+        localStorage.removeItem(`draft_codeContent_${id}`);
+        localStorage.removeItem(`draft_mixedContent_${id}`);
+        localStorage.removeItem(`draft_status_${id}`);
+        localStorage.removeItem(`draft_category_${id}`);
+        localStorage.removeItem(`draft_tags_${id}`);
+        localStorage.removeItem(`draft_${id}`); // Legacy key
+      }
+
       navigate('/dashboard');
     } catch (error) {
       console.error('Error saving note:', error);
@@ -294,7 +520,8 @@ function NoteEditor() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [sanitizedTitle, editorMode, codeContent, content, richTextContent, mixedContent, status, category, 
+     sanitizedTags, isEditing, id, user, navigate, addNotification]);
 
   if (loading && isEditing) {
     return (
@@ -307,13 +534,22 @@ function NoteEditor() {
     );
   }
 
+  // Memoize the category options to prevent unnecessary re-renders
+  const categoryOptions = useMemo(() => {
+    return categories.map((cat) => (
+      <option key={cat.$id || cat.id} value={cat.$id || cat.id}>
+        {cat.name}
+      </option>
+    ));
+  }, [categories]);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="max-w-4xl mx-auto py-8 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="flex items-center mb-8">
-            <div className={`p-3 rounded-lg ${isEditing ? 'bg-indigo-100' : 'bg-green-100'} mr-4`}>
-              <svg className={`h-6 w-6 ${isEditing ? 'text-indigo-600' : 'text-green-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className={`p-3 rounded-lg ${isEditing ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-green-100 dark:bg-green-900/30'} mr-4`}>
+              <svg className={`h-6 w-6 ${isEditing ? 'text-indigo-600 dark:text-indigo-400' : 'text-green-600 dark:text-green-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {isEditing ? (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 ) : (
@@ -322,32 +558,32 @@ function NoteEditor() {
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {isEditing ? 'Edit Blog Post' : 'Create New Blog Post'}
               </h2>
-              <p className="text-gray-600">Write and publish your content</p>
+              <p className="text-gray-600 dark:text-gray-400">Write and publish your content</p>
             </div>
           </div>
           
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-6" role="alert">
+            <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-500 p-4 rounded mb-6" role="alert">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 w-5 text-red-400 dark:text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
+                  <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
                 </div>
               </div>
             </div>
           )}
           
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="bg-white p-6 rounded-xl shadow">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow">
               <div className="space-y-2">
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Post Title
                 </label>
                 <input
@@ -355,53 +591,49 @@ function NoteEditor() {
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-lg transition-colors duration-200"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-lg transition-colors duration-200"
                   placeholder="Enter your post title"
                   required
                 />
-                <p className="text-sm text-gray-500">Make your title compelling and descriptive</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Make your title compelling and descriptive</p>
               </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="bg-white p-6 rounded-xl shadow space-y-2">
-                <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow space-y-2">
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Status
                 </label>
                 <select
                   id="status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm transition-colors duration-200"
                 >
                   <option value="draft">Draft</option>
                   <option value="published">Published</option>
                 </select>
-                <p className="text-sm text-gray-500">Choose the visibility status for your post</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Choose the visibility status for your post</p>
               </div>
               
-              <div className="bg-white p-6 rounded-xl shadow space-y-2">
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow space-y-2">
+                <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Category
                 </label>
                 <select
                   id="category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm transition-colors duration-200"
                 >
                   <option value="">Select Category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.$id || cat.id} value={cat.$id || cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
+                  {categoryOptions}
                 </select>
-                <p className="text-sm text-gray-500">Organize your post in a category</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Organize your post in a category</p>
               </div>
               
-              <div className="bg-white p-6 rounded-xl shadow space-y-2">
-                <label htmlFor="tags" className="block text-sm font-medium text-gray-700">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow space-y-2">
+                <label htmlFor="tags" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Tags
                 </label>
                 <input
@@ -409,21 +641,21 @@ function NoteEditor() {
                   id="tags"
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200"
+                  className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm transition-colors duration-200"
                   placeholder="e.g. javascript, tutorial"
                 />
-                <p className="text-sm text-gray-500">Separate tags with commas</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Separate tags with commas</p>
               </div>
             </div>
             
-            <div className="bg-white p-6 rounded-xl shadow">
-              <div className="flex border-b border-gray-200 mb-4 overflow-x-auto">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow">
+              <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4 overflow-x-auto">
                 <button
                   type="button"
                   className={`py-3 px-4 font-medium text-sm whitespace-nowrap ${
                     editorMode === 'text'
-                      ? 'border-b-2 border-indigo-500 text-indigo-700'
-                      : 'text-gray-600 hover:text-gray-800'
+                      ? 'border-b-2 border-indigo-500 text-indigo-700 dark:text-indigo-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                   }`}
                   onClick={() => setEditorMode('text')}
                 >
@@ -438,8 +670,8 @@ function NoteEditor() {
                   type="button"
                   className={`py-3 px-4 font-medium text-sm whitespace-nowrap ${
                     editorMode === 'richtext'
-                      ? 'border-b-2 border-indigo-500 text-indigo-700'
-                      : 'text-gray-600 hover:text-gray-800'
+                      ? 'border-b-2 border-indigo-500 text-indigo-700 dark:text-indigo-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                   }`}
                   onClick={() => setEditorMode('richtext')}
                 >
@@ -454,8 +686,8 @@ function NoteEditor() {
                   type="button"
                   className={`py-3 px-4 font-medium text-sm whitespace-nowrap ${
                     editorMode === 'code'
-                      ? 'border-b-2 border-indigo-500 text-indigo-700'
-                      : 'text-gray-600 hover:text-gray-800'
+                      ? 'border-b-2 border-indigo-500 text-indigo-700 dark:text-indigo-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                   }`}
                   onClick={() => setEditorMode('code')}
                 >
@@ -470,8 +702,8 @@ function NoteEditor() {
                   type="button"
                   className={`py-3 px-4 font-medium text-sm whitespace-nowrap ${
                     editorMode === 'mixed'
-                      ? 'border-b-2 border-indigo-500 text-indigo-700'
-                      : 'text-gray-600 hover:text-gray-800'
+                      ? 'border-b-2 border-indigo-500 text-indigo-700 dark:text-indigo-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                   }`}
                   onClick={() => setEditorMode('mixed')}
                 >
@@ -486,7 +718,7 @@ function NoteEditor() {
               
               {editorMode === 'text' ? (
                 <div className="space-y-2">
-                  <label htmlFor="content" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Post Content
                   </label>
                   <textarea
@@ -494,7 +726,13 @@ function NoteEditor() {
                     ref={textareaRef}
                     rows={15}
                     value={content}
-                    onChange={(e) => setContent(e.target.value)}
+                    onChange={(e) => {
+                      setContent(e.target.value);
+                      // Auto-save for text editor when editing an existing note
+                      if (isEditing && id) {
+                        handleAutoSave(id, e.target.value, 'text');
+                      }
+                    }}
                     onPaste={async (e) => {
                       // Wait for the paste to complete
                       setTimeout(async () => {
@@ -512,39 +750,52 @@ function NoteEditor() {
                           } else {
                             // Keep in text mode with the pasted content
                             setContent(pastedContent);
+                            // Auto-save the pasted content
+                            if (isEditing && id) {
+                              handleAutoSave(id, pastedContent, 'text');
+                            }
                           }
                         }
                       }, 10); // Small delay to allow paste to complete
                     }}
-                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors duration-200"
+                    className="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm transition-colors duration-200"
                     placeholder="Write your blog post content here... (Paste blog content here to auto-detect code blocks)"
                   ></textarea>
-                  <p className="text-sm text-gray-500">Write your post content in the editor above. Paste blog content with code to auto-detect code blocks.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Write your post content in the editor above. Paste blog content with code to auto-detect code blocks.</p>
                 </div>
               ) : editorMode === 'richtext' ? (
                 <div className="space-y-2">
-                  <label htmlFor="richtext-content" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="richtext-content" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Rich Text Content
                   </label>
-                  <RichTextEditor 
+                  <EnhancedRichTextEditor 
                     value={richTextContent}
                     onChange={setRichTextContent}
+                    noteId={id}
+                    autoSave={isEditing}
+                    onAutoSave={handleRichTextAutoSave}
                   />
-                  <p className="text-sm text-gray-500">Format your content with rich text options for better presentation.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Format your content with rich text options for better presentation.</p>
                 </div>
               ) : editorMode === 'mixed' ? (
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Mixed Content (Text & Code)
                   </label>
                   <ContentEditor 
                     value={mixedContent}
-                    onChange={setMixedContent}
+                    onChange={(newContent) => {
+                      setMixedContent(newContent);
+                      // Auto-save for mixed content editor when editing an existing note
+                      if (isEditing && id) {
+                        handleAutoSave(id, newContent, 'mixed');
+                      }
+                    }}
                   />
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Code Content
                   </label>
                   <CodeEditor
@@ -552,10 +803,15 @@ function NoteEditor() {
                     onChange={(content, language) => {
                       setCodeContent(content);
                       if (language) setCodeLanguage(language);
+                      
+                      // Auto-save for code editor when editing an existing note
+                      if (isEditing && id) {
+                        handleAutoSave(id, content, 'code');
+                      }
                     }}
                     language={codeLanguage}
                   />
-                  <p className="text-sm text-gray-500">Write your code snippet in the editor above</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Write your code snippet in the editor above</p>
                 </div>
               )}
             </div>
@@ -564,7 +820,7 @@ function NoteEditor() {
               <button
                 type="button"
                 onClick={() => navigate('/dashboard')}
-                className="inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                className="inline-flex items-center px-6 py-3 border border-gray-300 dark:border-gray-600 shadow-sm text-base font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
               >
                 Cancel
               </button>

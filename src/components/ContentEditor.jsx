@@ -1,11 +1,105 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
+
+// Memoized Content Block Component to prevent unnecessary re-renders
+const ContentBlock = React.memo(({ item, index, contentLength, updateContentBlock, removeContentBlock, moveBlock }) => {
+  const handleContentChange = useCallback((e) => {
+    updateContentBlock(index, { ...item, content: e.target.value });
+  }, [index, item, updateContentBlock]);
+
+  const handleTypeToggle = useCallback(() => {
+    const newType = item.type === 'code' ? 'text' : 'code';
+    updateContentBlock(index, { ...item, type: newType });
+  }, [index, item, updateContentBlock]);
+
+  // Calculate rows based on content length to optimize rendering
+  const rows = useMemo(() => {
+    return Math.min(10, Math.max(2, item.content.split('\n').length));
+  }, [item.content]);
+
+  return (
+    <div className="mb-4 last:mb-0 border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between bg-gray-50 px-3 py-2">
+        <div className="flex items-center">
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            item.type === 'code' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+          }`}>
+            {item.type === 'code' ? 'Code' : 'Text'}
+          </span>
+          <span className="ml-2 text-xs text-gray-500 truncate max-w-xs">
+            {item.content.substring(0, 50)}{item.content.length > 50 ? '...' : ''}
+          </span>
+        </div>
+        <div className="flex space-x-1">
+          {index > 0 && (
+            <button
+              type="button"
+              onClick={() => moveBlock(index, index - 1)}
+              className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200 transition-colors"
+              title="Move up"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+            </button>
+          )}
+          {index < contentLength - 1 && (
+            <button
+              type="button"
+              onClick={() => moveBlock(index, index + 1)}
+              className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200 transition-colors"
+              title="Move down"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleTypeToggle}
+            className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200 transition-colors"
+            title={`Switch to ${item.type === 'code' ? 'text' : 'code'}`}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => removeContentBlock(index)}
+            className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-100 transition-colors"
+            title="Delete block"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <div className="p-2">
+        <textarea
+          value={item.content}
+          onChange={handleContentChange}
+          className={`w-full p-2 text-sm rounded border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+            item.type === 'code' 
+              ? 'font-mono bg-gray-900 text-green-400' 
+              : 'bg-white text-gray-700'
+          }`}
+          rows={rows}
+          placeholder={`Enter ${item.type} content here...`}
+        />
+      </div>
+    </div>
+  );
+});
 
 const ContentEditor = ({ value = [], onChange, onPaste }) => {
   const [content, setContent] = useState(value);
   const textareaRef = useRef(null);
   
-  // Function to detect if text is code based on patterns
-  const isCodeBlock = (text) => {
+  // Function to detect if text is code based on patterns - memoized for performance
+  const isCodeBlock = useCallback((text) => {
     // Check for common code patterns
     const codeIndicators = [
       // Indented code blocks
@@ -60,10 +154,10 @@ const ContentEditor = ({ value = [], onChange, onPaste }) => {
     }
     
     return false;
-  };
+  }, []);
 
-  // Function to process pasted content and classify as text or code
-  const processPastedContent = (pastedText) => {
+  // Function to process pasted content and classify as text or code - memoized
+  const processPastedContent = useCallback((pastedText) => {
     // Split the content by lines
     const lines = pastedText.split('\n');
     const processedContent = [];
@@ -118,9 +212,9 @@ const ContentEditor = ({ value = [], onChange, onPaste }) => {
     }
     
     return processedContent;
-  };
+  }, [isCodeBlock]);
 
-  const handlePaste = (e) => {
+  const handlePaste = useCallback((e) => {
     // Call the parent's paste handler if provided
     if (onPaste) {
       onPaste(e);
@@ -137,34 +231,49 @@ const ContentEditor = ({ value = [], onChange, onPaste }) => {
         onChange(processedContent);
       }
     }, 10);
-  };
+  }, [onPaste, processPastedContent, onChange]);
 
-  const addContentBlock = (type, content = '') => {
+  const addContentBlock = useCallback((type, content = '') => {
     const newContent = [...content, { type, content }];
     setContent(newContent);
     onChange(newContent);
-  };
+  }, [onChange]);
 
-  const updateContentBlock = (index, newContent) => {
+  const updateContentBlock = useCallback((index, newContent) => {
     const updatedContent = [...content];
     updatedContent[index] = newContent;
     setContent(updatedContent);
     onChange(updatedContent);
-  };
+  }, [content, onChange]);
 
-  const removeContentBlock = (index) => {
+  const removeContentBlock = useCallback((index) => {
     const updatedContent = content.filter((_, i) => i !== index);
     setContent(updatedContent);
     onChange(updatedContent);
-  };
+  }, [content, onChange]);
 
-  const moveBlock = (fromIndex, toIndex) => {
+  const moveBlock = useCallback((fromIndex, toIndex) => {
     const updatedContent = [...content];
     const [movedItem] = updatedContent.splice(fromIndex, 1);
     updatedContent.splice(toIndex, 0, movedItem);
     setContent(updatedContent);
     onChange(updatedContent);
-  };
+  }, [content, onChange]);
+
+  // Memoize the content blocks to prevent unnecessary re-renders
+  const contentBlocks = useMemo(() => {
+    return content.map((item, index) => (
+      <ContentBlock
+        key={index}
+        item={item}
+        index={index}
+        contentLength={content.length}
+        updateContentBlock={updateContentBlock}
+        removeContentBlock={removeContentBlock}
+        moveBlock={moveBlock}
+      />
+    ));
+  }, [content, updateContentBlock, removeContentBlock, moveBlock]);
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
@@ -195,85 +304,7 @@ const ContentEditor = ({ value = [], onChange, onPaste }) => {
             <p className="mt-2 text-sm">Add text or code blocks, or paste blog content to auto-detect.</p>
           </div>
         ) : (
-          content.map((item, index) => (
-            <div key={index} className="mb-4 last:mb-0 border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-              <div className="flex items-center justify-between bg-gray-50 px-3 py-2">
-                <div className="flex items-center">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    item.type === 'code' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {item.type === 'code' ? 'Code' : 'Text'}
-                  </span>
-                  <span className="ml-2 text-xs text-gray-500 truncate max-w-xs">
-                    {item.content.substring(0, 50)}{item.content.length > 50 ? '...' : ''}
-                  </span>
-                </div>
-                <div className="flex space-x-1">
-                  {index > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => moveBlock(index, index - 1)}
-                      className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200 transition-colors"
-                      title="Move up"
-                    >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                      </svg>
-                    </button>
-                  )}
-                  {index < content.length - 1 && (
-                    <button
-                      type="button"
-                      onClick={() => moveBlock(index, index + 1)}
-                      className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200 transition-colors"
-                      title="Move down"
-                    >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newType = item.type === 'code' ? 'text' : 'code';
-                      updateContentBlock(index, { ...item, type: newType });
-                    }}
-                    className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200 transition-colors"
-                    title={`Switch to ${item.type === 'code' ? 'text' : 'code'}`}
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeContentBlock(index)}
-                    className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-100 transition-colors"
-                    title="Delete block"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              
-              <div className="p-2">
-                <textarea
-                  value={item.content}
-                  onChange={(e) => updateContentBlock(index, { ...item, content: e.target.value })}
-                  className={`w-full p-2 text-sm rounded border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
-                    item.type === 'code' 
-                      ? 'font-mono bg-gray-900 text-green-400' 
-                      : 'bg-white text-gray-700'
-                  }`}
-                  rows={Math.min(10, Math.max(2, item.content.split('\n').length))}
-                  placeholder={`Enter ${item.type} content here...`}
-                />
-              </div>
-            </div>
-          ))
+          contentBlocks
         )}
       </div>
       

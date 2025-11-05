@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getNotes } from '../services/notes';
 import { getCategoryById } from '../services/categoryServiceAppwrite';
 import CodeBlock from './CodeBlock';
+import DOMPurify from 'dompurify';
 
 function NoteViewer() {
   const [note, setNote] = useState(null);
@@ -192,7 +193,20 @@ function NoteViewer() {
                 // Display rich text content
                 <div 
                   className="prose prose-lg max-w-none"
-                  dangerouslySetInnerHTML={{ __html: note.richTextContent.replace(/\n/g, '<br />') }} 
+                  dangerouslySetInnerHTML={{ 
+                    __html: DOMPurify.sanitize(note.richTextContent.replace(/\n/g, '<br />'), {
+                      ALLOWED_TAGS: [
+                        'p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                        'blockquote', 'q', 'ul', 'ol', 'li', 'a', 'img', 'code', 'pre', 'div',
+                        'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'b', 'i'
+                      ],
+                      ALLOWED_ATTR: [
+                        'href', 'src', 'alt', 'title', 'class', 'id', 'style', 'target', 
+                        'rel', 'width', 'height', 'align', 'colspan', 'rowspan'
+                      ],
+                      ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+                    })
+                  }} 
                 />
               ) : (
                 // Otherwise, display regular content

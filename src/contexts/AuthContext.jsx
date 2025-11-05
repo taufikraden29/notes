@@ -45,6 +45,7 @@ export function AuthProvider({ children }) {
 
     const value = {
         user,
+        loading,
         login,
         logout,
         signup
@@ -52,7 +53,7 @@ export function AuthProvider({ children }) {
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {loading ? null : children}
         </AuthContext.Provider>
     );
 }

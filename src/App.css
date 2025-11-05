@@ -1,8 +1,6 @@
 /* This file can be used for custom styles that are not covered by Tailwind CSS */
 /* Currently, the application is using Tailwind CSS utility classes for styling */
 
-
-
 /* Styling untuk komponen manajemen kategori */
 .category-color-preview {
   display: inline-block;
@@ -150,6 +148,15 @@
   --radius: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+}
+
+/* Dark mode variables */
+[data-theme="dark"] {
+  --text-primary: #F9FAFB;
+  --text-secondary: #D1D5DB;
+  --bg-primary: #111827;
+  --bg-secondary: #1F2937;
+  --border-color: #374151;
 }
 
 /* Consistent button styles - using regular CSS instead of @apply */
@@ -414,4 +421,90 @@
   padding: 1rem 1.5rem;
   background-color: #F9FAFB;
   border-top: 1px solid #E5E7EB;
+}
+
+/* Dark mode styles */
+[data-theme="dark"] .card,
+[data-theme="dark"] .card-hover,
+[data-theme="dark"] .bg-white {
+  background-color: #1F2937;
+  border-color: #374151;
+}
+
+[data-theme="dark"] .text-gray-900 {
+  color: #F9FAFB;
+}
+
+[data-theme="dark"] .text-gray-700 {
+  color: #D1D5DB;
+}
+
+[data-theme="dark"] .text-gray-600 {
+  color: #9CA3AF;
+}
+
+[data-theme="dark"] .text-gray-500 {
+  color: #9CA3AF;
+}
+
+[data-theme="dark"] .border-gray-200 {
+  border-color: #374151;
+}
+
+[data-theme="dark"] .bg-gray-50 {
+  background-color: #111827;
+}
+
+[data-theme="dark"] .bg-gray-100 {
+  background-color: #1F2937;
+}
+
+[data-theme="dark"] .bg-gray-200 {
+  background-color: #374151;
+}
+
+[data-theme="dark"] .bg-gray-500 {
+  background-color: #6B7280;
+}
+
+[data-theme="dark"] .hover\:bg-gray-100:hover {
+  background-color: #374151;
+}
+
+[data-theme="dark"] .hover\:bg-gray-50:hover {
+  background-color: #1F2937;
+}
+
+[data-theme="dark"] .placeholder-gray-400::placeholder {
+  color: #9CA3AF;
+}
+
+[data-theme="dark"] .border-gray-300 {
+  border-color: #4B5563;
+}
+
+[data-theme="dark"] .focus\:ring-indigo-500:focus {
+  --tw-ring-color: #818CF8;
+}
+
+/* Editor content dark mode */
+[data-theme="dark"] .ql-editor,
+[data-theme="dark"] [contenteditable] {
+  background-color: #1F2937;
+  color: #F9FAFB;
+}
+
+/* Improved focus styles for accessibility */
+*:focus {
+  outline: 2px solid #4F46E5;
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

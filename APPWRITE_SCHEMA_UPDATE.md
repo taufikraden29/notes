@@ -1,6 +1,6 @@
 # Appwrite Schema Update for BlogMe
 
-To support the new code snippet functionality in BlogMe, you need to update your Appwrite collection schema to include the following fields:
+To support the new code snippet and auto-save functionality in BlogMe, you need to update your Appwrite collection schema to include the following fields:
 
 ## Required Collection: "notes"
 
@@ -18,6 +18,18 @@ Add these fields to your "notes" collection in Appwrite:
    - Nullable: Yes
    - Required: No
 
+3. **richTextContent**
+   - Type: String
+   - Size: 4000
+   - Nullable: Yes
+   - Required: No
+
+4. **mixedContent**
+   - Type: String
+   - Size: 10000
+   - Nullable: Yes
+   - Required: No
+
 ## How to Update Schema
 
 1. Go to your Appwrite Console
@@ -27,6 +39,8 @@ Add these fields to your "notes" collection in Appwrite:
 5. Click "Add Attribute" and add the following:
    - Attribute: "codeContent", Type: String, Size: 4000, Required: No
    - Attribute: "language", Type: String, Size: 20, Required: No
+   - Attribute: "richTextContent", Type: String, Size: 4000, Required: No
+   - Attribute: "mixedContent", Type: String, Size: 10000, Required: No
 
 ## Note
 

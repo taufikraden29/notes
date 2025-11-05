@@ -56,6 +56,8 @@ To use this application with Appwrite, you need to:
    - owner: String, size 36, required
    - codeContent: String, size 4000, nullable
    - language: String, size 20, nullable
+   - richTextContent: String, size 4000, nullable
+   - mixedContent: String, size 10000, nullable (JSON string)
 
 ## License
 
